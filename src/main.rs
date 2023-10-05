@@ -18,19 +18,6 @@ fn eh_conexo(graph: Vec<Vec<i32>>) {
     }
 }
 
-// fn load_graph(path_dynamic: &str) -> Vec<&str> {
-//     if let Ok(current_dir) = env::current_dir() {
-//         let mut file = File::open(current_dir.join(path_dynamic));
-//         let mut buffer = Vec::new();
-//         file.expect("Load the file")
-//             .read_to_end(&mut buffer)
-//             .expect("Try read file");
-//         let contents = String::from_utf8_lossy(&buffer);
-//         return contents.trim().split("\n").collect();
-//     } else {
-//         panic!("No such file o directory");
-//     }
-// }
 
 fn load_graph(path_dynamic: &str) -> Vec<String> {
     if let Ok(current_dir) = env::current_dir() {
@@ -40,7 +27,9 @@ fn load_graph(path_dynamic: &str) -> Vec<String> {
             .read_to_end(&mut buffer)
             .expect("Try to read the file");
         let contents = String::from_utf8_lossy(&buffer);
-        return contents.trim().split("\n").map(|s| s.to_string()).collect();
+        let mut edges: Vec<String> = contents.trim().split("\n").map(|s| s.to_string()).collect();
+        edges.remove(0);
+        edges
     } else {
         panic!("No such file or directory");
     }
@@ -112,7 +101,6 @@ fn graph_in_lists() -> HashMap<i32, HashSet<i32>> {
 }
 
 fn graph_matrix(list_set: Vec<String>) -> Vec<Vec<i32>> {
-    // let size = list_set.try_into().iter().len();\
     let size = 5;
     let mut arr = vec![vec![0; size]; size];
     for parse_edge in list_set {
@@ -129,51 +117,88 @@ fn graph_matrix(list_set: Vec<String>) -> Vec<Vec<i32>> {
     arr
 }
 
-fn dfs() {
-    println!("Implement DFS");
+fn dfs(start_node: i32, graph: HashMap<i32, HashSet<i32>>) {
+    let mut visited = HashSet::new();
+    let mut queue = vec![];
+
+    visited.insert(start_node);
+    queue.push(start_node);
+    while !queue.is_empty(){
+        let node: Option<i32> = queue.pop();
+        if let Some(value) =  node {
+            print!("{:?} ", value);
+            if let Some(neighbor) = graph.get(&value) {
+                for &no in neighbor.iter() {
+                    if visited.get(&no).is_none() {
+                        visited.insert(no);
+                        queue.push(no);
+                    }
+                }
+            }
+        }
+    }
 }
 
-fn bfs() {
-    println!("implement BFS");
+fn bfs(start_node: i32, graph: HashMap<i32, HashSet<i32>>) {
+    let mut visited = HashSet::new();
+    let mut queue = vec![];
+
+    visited.insert(start_node);
+    queue.push(start_node);
+    while !queue.is_empty(){
+        let node: i32 = queue.remove(0);
+        print!("{:?} ", node);
+        if let Some(neighbor) = graph.get(&node){
+            for &no in neighbor.iter(){
+                if visited.get(&no).is_none() {
+                    visited.insert(no);
+                    queue.push(no);
+                }
+            }
+        }
+    }
 }
 
 fn graph_information(graph: HashMap<i32, HashSet<i32>>) {
     let mut number_of_edges = graph.keys().len();
     let mut number_of_vertices = 0;
-    let mut file = File::create("/home/bezerra/Desktop/estudos/rust/grafos/grafos/src/arquivo.txt")
-        .expect("Create the file");
-    let mut clone_graph = graph.clone();
-    for edge in clone_graph.keys() {
-        number_of_vertices += clone_graph.get(&edge).iter().len();
-        if let Some(hash_set) = clone_graph.get(&edge) {
-            for value in hash_set.iter() {
-                continue;
-                // clone_graph.get_mut(&edge).expect("Try").remove(&value);
+    if let Ok(current_dir) = env::current_dir() {
+        let mut file = File::create(current_dir.join("src/arquivo.txt"))
+            .expect("Create the file");
+        let mut clone_graph = graph.clone();
+        for edge in clone_graph.keys() {
+            number_of_vertices += clone_graph.get(&edge).iter().len();
+            if let Some(hash_set) = clone_graph.get(&edge) {
+                for value in hash_set.iter() {
+                    continue;
+                    // clone_graph.get_mut(&edge).expect("Try").remove(&value);
+                }
             }
         }
-    }
-    file.write_all(number_of_edges.to_string().as_bytes())
-        .expect("Panic Write edges");
-    file.write_all(b"\n").expect("Panic Write edges");
-    file.write_all(number_of_vertices.to_string().as_bytes())
-        .expect("Panic Write vertices");
-    file.write_all(b"\n").expect("Panic write vertices");
-    for edge in graph.keys() {
-        let len_vertices = graph.get(edge).iter().len();
-        let line = format!("{:?} {:?}", edge, len_vertices);
-        number_of_vertices += len_vertices;
-        file.write_all(line.as_bytes())
-            .expect("TODO: Panic on try to write in file");
-        file.write_all(b"\n")
-            .expect("TODO Panic on try to write in file");
+        file.write_all(number_of_edges.to_string().as_bytes())
+            .expect("Panic Write edges");
+        file.write_all(b"\n").expect("Panic Write edges");
+        file.write_all(number_of_vertices.to_string().as_bytes())
+            .expect("Panic Write vertices");
+        file.write_all(b"\n").expect("Panic write vertices");
+        for edge in graph.keys() {
+            let len_vertices = graph.get(edge).iter().len();
+            let line = format!("{:?} {:?}", edge, len_vertices);
+            number_of_vertices += len_vertices;
+            file.write_all(line.as_bytes())
+                .expect("TODO: Panic on try to write in file");
+            file.write_all(b"\n")
+                .expect("TODO Panic on try to write in file");
+        }
     }
 }
 
 fn main() {
     let mut edges = load_graph("src/exemplo.txt");
-    println!("{:?}", edges);
     let mut graph = graph(edges.clone());
-    // let mut graph_matrix = graph_matrix(edges);
-    println!("{:?}", graph);
-    graph_information(graph);
+
+    bfs(1, graph.clone());
+    println!();
+    dfs(1, graph.clone())
+    // graph_information(graph);
 }
