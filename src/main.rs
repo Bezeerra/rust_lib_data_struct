@@ -3,23 +3,7 @@ use std::env;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader, Read, Write};
 
-fn eh_conexo(graph: Vec<Vec<i32>>) {
-    let mut conexo: HashMap<usize, i32> = HashMap::new();
-    for i in 0..graph.len() {
-        for j in 0..graph[0].len() {
-            if graph[i][j] == 1 {
-                conexo.insert(i, 1);
-                conexo.insert(j, 1);
-            }
-        }
-    }
-    if conexo.keys().len() == graph.len() {
-        println!("É conexo");
-    }
-}
-
-
-fn load_graph(path_dynamic: &str) -> Vec<String> {
+fn load_graph_vector(path_dynamic: &str) -> Vec<String> {
     if let Ok(current_dir) = env::current_dir() {
         let mut file = File::open(current_dir.join(path_dynamic));
         let mut buffer = Vec::new();
@@ -35,69 +19,98 @@ fn load_graph(path_dynamic: &str) -> Vec<String> {
     }
 }
 
-fn graph(list_set: Vec<String>) -> HashMap<i32, HashSet<i32>> {
-    let mut graph = HashMap::new();
-    for edge in list_set {
-        let parse_edge: Vec<i32> = edge
-            .trim()
-            .split_whitespace()
-            .map(|s| s.parse().expect("Fail to parse edge"))
-            .collect();
-        if parse_edge.len() == 1 {
-            continue;
-        }
-        graph
-            .entry(parse_edge[1])
-            .or_insert_with(&mut HashSet::new)
-            .insert(parse_edge[0]);
-
-        graph
-            .entry(parse_edge[0])
-            .or_insert_with(&mut HashSet::new)
-            .insert(parse_edge[1]);
-    }
-    graph
+struct Graph {
+    edges: HashMap<i32, HashSet<i32>>
 }
 
-fn graph_in_lists() -> HashMap<i32, HashSet<i32>> {
-    println!("Digit the 0 for break the loop!!");
-    println!("Digit the size of matrix: ");
-    let mut size = String::new();
-    io::stdin()
-        .read_line(&mut size)
-        .expect("Falha ao ler a linha");
-    let cleaned_input = size.trim();
-    let size_int = cleaned_input.parse::<i32>().unwrap();
-
-    let mut graph = HashMap::new();
-
-    for i in 0..size_int {
-        graph.insert(i + 1, HashSet::new());
+impl Graph {
+    fn new(data: Vec<String>) -> Graph{
+        Graph {
+            edges:Self::graph(data)
+        }
     }
 
-    loop {
-        let mut edge = String::new();
-        io::stdin()
-            .read_line(&mut edge)
-            .expect("Fail to read the line input");
-        let parse_edge: Vec<i32> = edge
-            .trim()
-            .split_whitespace()
-            .map(|s| s.parse().expect("Fail to parse edge"))
-            .collect();
-        if parse_edge[0] == 0 {
-            break;
+    fn graph(list_set: Vec<String>) -> HashMap<i32, HashSet<i32>> {
+        let mut graph = HashMap::new();
+        for edge in list_set {
+            let parse_edge: Vec<i32> = edge
+                .trim()
+                .split_whitespace()
+                .map(|s| s.parse().expect("Fail to parse edge"))
+                .collect();
+            if parse_edge.len() == 1 {
+                continue;
+            }
+            graph
+                .entry(parse_edge[1])
+                .or_insert_with(HashSet::new)
+                .insert(parse_edge[0]);
+
+            graph
+                .entry(parse_edge[0])
+                .or_insert_with(HashSet::new)
+                .insert(parse_edge[1]);
         }
         graph
-            .entry(parse_edge[1])
-            .or_insert_with(&mut HashSet::new)
-            .insert(parse_edge[0]);
-        graph
-            .entry(parse_edge[0])
-            .or_insert_with(&mut HashSet::new)
-            .insert(parse_edge[1]);
     }
-    graph
+
+
+    fn dfs(&mut self, start_node: i32){
+        let mut visited = HashSet::new();
+        let mut queue = vec![];
+
+        visited.insert(start_node);
+        queue.push(start_node);
+        while !queue.is_empty(){
+            let node: Option<i32> = queue.pop();
+            if let Some(value) =  node {
+                print!("{:?} ", value);
+                if let Some(neighbor) = self.edges.get(&value) {
+                    for &no in neighbor.iter() {
+                        if visited.get(&no).is_none() {
+                            visited.insert(no);
+                            queue.push(no);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fn bfs(&mut self, start_node: i32){
+        let mut visited = HashSet::new();
+        let mut queue = vec![];
+
+        visited.insert(start_node);
+        queue.push(start_node);
+        while !queue.is_empty(){
+            let node: i32 = queue.remove(0);
+            print!("{:?} ", node);
+            if let Some(neighbor) = self.edges.get(&node){
+                for &no in neighbor.iter(){
+                    if visited.get(&no).is_none() {
+                        visited.insert(no);
+                        queue.push(no);
+                    }
+                }
+            }
+        }
+    }
+
+    fn eh_conexo(graph: Vec<Vec<i32>>) {
+        let mut conexo: HashMap<usize, i32> = HashMap::new();
+        for i in 0..graph.len() {
+            for j in 0..graph[0].len() {
+                if graph[i][j] == 1 {
+                    conexo.insert(i, 1);
+                    conexo.insert(j, 1);
+                }
+            }
+        }
+        if conexo.keys().len() == graph.len() {
+            println!("É conexo");
+        }
+    }
 }
 
 fn graph_matrix(list_set: Vec<String>) -> Vec<Vec<i32>> {
@@ -194,11 +207,13 @@ fn graph_information(graph: HashMap<i32, HashSet<i32>>) {
 }
 
 fn main() {
-    let mut edges = load_graph("src/exemplo.txt");
-    let mut graph = graph(edges.clone());
+    let mut edges = load_graph_vector("src/exemplo.txt");
+    let mut graph = Graph::new(edges);
+    println!("{:?}", graph.edges);
+    // let mut graph = graph(edges.clone());
 
-    bfs(1, graph.clone());
-    println!();
-    dfs(1, graph.clone())
+    // bfs(1, graph.clone());
+    // println!();
+    // dfs(1, graph.clone())
     // graph_information(graph);
 }
