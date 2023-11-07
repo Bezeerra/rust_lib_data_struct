@@ -20,13 +20,16 @@ fn load_graph_vector(path_dynamic: &str) -> Vec<String> {
 }
 
 struct Graph {
-    edges: HashMap<i32, HashSet<i32>>
+    graph: HashMap<i32, HashSet<i32>>,
+    graph_matrix: Vec<Vec<i32>>,
 }
 
 impl Graph {
-    fn new(data: Vec<String>) -> Graph{
+    fn new(data: Vec<String>) -> Graph {
+        let clone_data = data.clone();
         Graph {
-            edges:Self::graph(data)
+            graph: Self::graph(data),
+            graph_matrix: Self::graph_matrix(clone_data),
         }
     }
 
@@ -54,18 +57,34 @@ impl Graph {
         graph
     }
 
+    fn graph_matrix(list_set: Vec<String>) -> Vec<Vec<i32>> {
+        let size = 5;
+        let mut arr = vec![vec![0; size]; size];
+        for parse_edge in list_set {
+            let edge: Vec<i32> = parse_edge
+                .trim()
+                .split_whitespace()
+                .map(|s| s.parse().expect("Falha ao analisar aresta"))
+                .collect();
+            if edge[0] == 1 {
+                continue;
+            };
+            arr[edge[0] as usize - 1][edge[1] as usize - 1] = 1;
+        }
+        arr
+    }
 
-    fn dfs(&mut self, start_node: i32){
+    fn dfs(&mut self, start_node: i32) {
         let mut visited = HashSet::new();
         let mut queue = vec![];
 
         visited.insert(start_node);
         queue.push(start_node);
-        while !queue.is_empty(){
+        while !queue.is_empty() {
             let node: Option<i32> = queue.pop();
-            if let Some(value) =  node {
+            if let Some(value) = node {
                 print!("{:?} ", value);
-                if let Some(neighbor) = self.edges.get(&value) {
+                if let Some(neighbor) = self.graph.get(&value) {
                     for &no in neighbor.iter() {
                         if visited.get(&no).is_none() {
                             visited.insert(no);
@@ -77,17 +96,17 @@ impl Graph {
         }
     }
 
-    fn bfs(&mut self, start_node: i32){
+    fn bfs(&mut self, start_node: i32) {
         let mut visited = HashSet::new();
         let mut queue = vec![];
 
         visited.insert(start_node);
         queue.push(start_node);
-        while !queue.is_empty(){
+        while !queue.is_empty() {
             let node: i32 = queue.remove(0);
             print!("{:?} ", node);
-            if let Some(neighbor) = self.edges.get(&node){
-                for &no in neighbor.iter(){
+            if let Some(neighbor) = self.graph.get(&node) {
+                for &no in neighbor.iter() {
                     if visited.get(&no).is_none() {
                         visited.insert(no);
                         queue.push(no);
@@ -113,71 +132,11 @@ impl Graph {
     }
 }
 
-fn graph_matrix(list_set: Vec<String>) -> Vec<Vec<i32>> {
-    let size = 5;
-    let mut arr = vec![vec![0; size]; size];
-    for parse_edge in list_set {
-        let edge: Vec<i32> = parse_edge
-            .trim()
-            .split_whitespace()
-            .map(|s| s.parse().expect("Falha ao analisar aresta"))
-            .collect();
-        if edge[0] == 1 {
-            continue;
-        };
-        arr[edge[0] as usize - 1][edge[1] as usize - 1] = 1;
-    }
-    arr
-}
-
-fn dfs(start_node: i32, graph: HashMap<i32, HashSet<i32>>) {
-    let mut visited = HashSet::new();
-    let mut queue = vec![];
-
-    visited.insert(start_node);
-    queue.push(start_node);
-    while !queue.is_empty(){
-        let node: Option<i32> = queue.pop();
-        if let Some(value) =  node {
-            print!("{:?} ", value);
-            if let Some(neighbor) = graph.get(&value) {
-                for &no in neighbor.iter() {
-                    if visited.get(&no).is_none() {
-                        visited.insert(no);
-                        queue.push(no);
-                    }
-                }
-            }
-        }
-    }
-}
-
-fn bfs(start_node: i32, graph: HashMap<i32, HashSet<i32>>) {
-    let mut visited = HashSet::new();
-    let mut queue = vec![];
-
-    visited.insert(start_node);
-    queue.push(start_node);
-    while !queue.is_empty(){
-        let node: i32 = queue.remove(0);
-        print!("{:?} ", node);
-        if let Some(neighbor) = graph.get(&node){
-            for &no in neighbor.iter(){
-                if visited.get(&no).is_none() {
-                    visited.insert(no);
-                    queue.push(no);
-                }
-            }
-        }
-    }
-}
-
 fn graph_information(graph: HashMap<i32, HashSet<i32>>) {
     let mut number_of_edges = graph.keys().len();
     let mut number_of_vertices = 0;
     if let Ok(current_dir) = env::current_dir() {
-        let mut file = File::create(current_dir.join("src/arquivo.txt"))
-            .expect("Create the file");
+        let mut file = File::create(current_dir.join("src/arquivo.txt")).expect("Create the file");
         let mut clone_graph = graph.clone();
         for edge in clone_graph.keys() {
             number_of_vertices += clone_graph.get(&edge).iter().len();
@@ -209,7 +168,8 @@ fn graph_information(graph: HashMap<i32, HashSet<i32>>) {
 fn main() {
     let mut edges = load_graph_vector("src/exemplo.txt");
     let mut graph = Graph::new(edges);
-    println!("{:?}", graph.edges);
+    println!("{:?}", graph.graph);
+    println!("{:?}", graph.graph_matrix);
     // let mut graph = graph(edges.clone());
 
     // bfs(1, graph.clone());
